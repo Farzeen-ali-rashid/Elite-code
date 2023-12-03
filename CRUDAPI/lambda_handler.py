@@ -70,12 +70,76 @@ def getProduct(productId):
 def getProducts():
     try:
         response = table.scan()
-        result = response['Item']
+        result = response['Items']
 
-    while 'LastEvaluatedKey' in response:
-        response = table.scan(ExclusiveStartKey = response['LastEvaluatedKey'])
-        result.extend(response['Item'])
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey = response['LastEvaluatedKey'])
+            result.extend(response['Items'])
+
+        body =  {
+            'products' : result
+        }
+
+        return buildResponse(200, body)
+    except:
+     logger.exception('Do your custom error handling here. I am just logging out here!')
+
+
+def saveProduct(requestBody):
+    try:
+        table.put_item(Item = requestBody)
+        body ={
+            'Operation' : 'SAVE',
+            'Message': 'SUCCESS',
+            'Item' :  requestBody
+        }
+        return buildResponse(200, body)
+    except:
+        logger.exception('Do your custom error handling here. I am just logging out here!')
+
+def modifyProduct(productId, updateKey, updateValue):
+    try:
+        response = table.update_Item(Key = {
+            'productId' : productId
+        },
+         UpdateExpression = 'set %s =  :value' % updateKey,
+         ExpressionAttributeValues = {
+             ':value' : updateValue
+         },
+         ReturnValues = 'UPDATED_NEW'
+        )
+
+        body ={
+            'Operation' : 'UPDATE',
+            'Message': 'SUCCESS',
+            'UpdateAttributes' : response
+        }
+
+        return buildResponse(200, body)
+    except:
+        logger.exception('Do your custom error handling here. I am just logging out here!')
+
+def deleteProduct(productId):
+    try:
+        repsonse = table.delete_item(
+            Key = {
+                'productId' : productId
+            },
+            ReturnValues = 'ALL_OLD'
+        )
+
+        body ={
+            'Operation' : 'DELETE',
+            'Message': 'SUCCESS',
+            'deletedItem' : repsonse
+        }
+
+        return buildResponse(200, body)
     
+    except:
+        logger.exception('Do your custom error handling here. I am just logging out here!')
+
+
 
 
 
